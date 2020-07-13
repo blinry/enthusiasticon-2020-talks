@@ -110,11 +110,15 @@ end
 
 video = "'EnthusiastiCon 2020.mp4'"
 
+run "inkscape ending.svg --export-area-page --export-width=1280 --export-filename=ending.png 2>/dev/null"
+# without the next line (and using it in concat) we get a horrible crying rubberduck
+run "ffmpeg -y -i ending.png -c:v libx264 -pix_fmt yuv420p -crf 0 -r 29.97 -video_track_timescale 30k endingframe.mp4"
+run "ffmpeg -y -i ending.png -i outro.mp3 -c:v libx264 -pix_fmt yuv420p -crf 0 -r 29.97 -video_track_timescale 30k -c:a aac ending.mp4"
 talks[0..2].each_with_index do |talk, i|
   run "sed \"s/SPEAKERS/#{talk[:speakers]}/;s/TITLE/#{talk[:title]}/\" <title.svg >title#{i}.svg"
   run "inkscape title#{i}.svg --export-area-page --export-width=1280 --export-filename=title#{i}.png 2>/dev/null"
   run "ffmpeg -y -i title#{i}.png -i intro.mp3 -c:v libx264 -pix_fmt yuv420p -crf 0 -r 29.97 -video_track_timescale 30k -c:a aac title#{i}.mp4"
   run "ffmpeg -y -i #{video} -ss #{talk[:start]} -to #{talk[:end]} -c copy talkonly#{i}.mp4"
 
-  run "echo -e \"file title#{i}.mp4\nfile talkonly#{i}.mp4\" | ffmpeg -y -f concat -protocol_whitelist file,pipe,crypto -i - -c copy talk#{i}.mp4"
+  run "echo -e \"file title#{i}.mp4\nfile talkonly#{i}.mp4\nfile endingframe.mp4\nfile ending.mp4\" | ffmpeg -y -f concat -protocol_whitelist file,pipe,crypto -i - -c copy talk#{i}.mp4"
 end
