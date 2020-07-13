@@ -97,6 +97,7 @@ Spoiler: He is successfully using Jitsi! (Without being stressed.)",
     title: "So THAT’S how my phone knows where I am!",
     start: "0:00:00",
     end: "0:00:00",
+    skipvideoonlycreation: true, # *cries*
     description: "Your phone knows where you are at all times, usually with pretty shocking accuracy. How the heck does it know that?! This talk will dive into the math and physics underlying modern smartphone location technology (GPS, AGPS, and indoor location), but it will also do so by means of a walk through history. Modern GPS arose out of Cold War-era US DoD research, but how is that research connected to the larger historical and political context of geolocation throughout history? How is the technical solution to tracking Russian missiles directly indebted to the 17th century sailors who developed smarter ways to locate themselves on the open sea? This talk will answer all of that and more!",
   },
   {
@@ -111,6 +112,7 @@ Spoiler: He is successfully using Jitsi! (Without being stressed.)",
     title: "The Meaning of K",
     start: "6:33:52",
     end: "6:44:00",
+    skiptitleslidesvgcreation: true, # *cries more*
     description: "Data Science methods are not normally written in K. But what if they were?
 
 K is a high-performance programming language popular in finance, but rarely seen elsewhere, and is known for its expressive and concise notation. While K is much less well known among data scientists than Python, it shares a common heritage with NumPy as both were strongly influenced by APL.
@@ -158,15 +160,22 @@ def prepare_the_ending
 end
 
 def cut_talk(talk, i)
-  run "sed \"s/SPEAKERS/#{talk[:speakers]}/;s/TITLE/#{talk[:title]}/\" <title.svg >tmp/title#{i}.svg"
-  run "inkscape tmp/title#{i}.svg --export-area-page --export-width=1280 --export-filename=tmp/title#{i}.png 2>/dev/null"
-  run "ffmpeg -y -i tmp/title#{i}.png -i intro.mp3 -c:v libx264 -pix_fmt yuv420p -crf 0 -r 29.97 -video_track_timescale 30k -c:a aac tmp/title#{i}.mp4"
-  run "ffmpeg -y -i #{@video} -ss #{talk[:start]} -to #{talk[:end]} -c copy tmp/talkonly#{i}.mp4"
+  if not talk[:skiptitleslidesvgcreation]
+    run "sed \"s/SPEAKERS/#{talk[:speakers]}/;s/TITLE/#{talk[:title]}/\" <title.svg >tmp/title#{i}.svg"
+  end
 
-  run "echo -e \"file tmp/title#{i}.mp4\nfile tmp/talkonly#{i}.mp4\nfile tmp/endingframe.mp4\nfile tmp/ending.mp4\" | ffmpeg -y -f concat -protocol_whitelist file,pipe,crypto -i - -c copy output/talk#{i}.mp4"
+  run "inkscape tmp/title#{i}.svg --export-area-page --export-width=1280 --export-filename=tmp/title#{i}.png 2>/dev/null"
+
+  run "ffmpeg -y -i tmp/title#{i}.png -i intro.mp3 -c:v libx264 -pix_fmt yuv420p -crf 0 -r 29.97 -video_track_timescale 30k -c:a aac tmp/title#{i}.mp4"
+
+  if not talk[:skipvideoonlycreation]
+    run "ffmpeg -y -i #{@video} -ss #{talk[:start]} -to #{talk[:end]} -c copy tmp/talkonly#{i}.mp4"
+  end
+
+  run "echo -e \"file tmp/title#{i}.mp4\nfile tmp/talkonly#{i}.mp4\nfile tmp/endingframe.mp4\nfile tmp/ending.mp4\nfile tmp/endingframe.mp4\" | ffmpeg -y -f concat -protocol_whitelist file,pipe,crypto -i - -c copy output/talk#{i}.mp4"
 end
 
-from = 16
+from = 8
 to = 16
 
 run "mkdir -p tmp output"
